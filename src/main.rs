@@ -1,8 +1,11 @@
 use std::{io, path::PathBuf};
 
-use rocket::tokio::{
-    task::spawn_blocking,
-    time::{sleep, Duration},
+use rocket::{
+    fs::FileServer,
+    tokio::{
+        task::spawn_blocking,
+        time::{sleep, Duration},
+    },
 };
 
 #[macro_use]
@@ -17,6 +20,13 @@ fn index() -> &'static str {
 async fn delay(seconds: u64) -> String {
     sleep(Duration::from_secs(seconds)).await;
     format!("Waiter for {seconds} seconds")
+}
+
+#[get("/path/<path_val..>")]
+fn path_val(path_val: PathBuf) -> String {
+    let joined_path = path_val.to_str().unwrap().to_string();
+
+    format!("You have navigated to: {joined_path}")
 }
 
 // Example of a blocking task
@@ -35,5 +45,7 @@ async fn read_file(filename: PathBuf) -> io::Result<Vec<u8>> {
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/", routes![index, delay, read_file])
+    rocket::build()
+        .mount("/", routes![index, delay, read_file, path_val])
+        .mount("/static", FileServer::from("static")) // Serving static assets
 }
